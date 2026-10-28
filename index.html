@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Molenweg</title>
+<meta name="theme-color" content="#1f6f5c">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Molenweg">
+<style>
+  :root {
+    --bg: #f4f1ea; --card: #ffffff; --ink: #1d2421; --muted: #6b736f;
+    --line: #e3ded3; --accent: #1f6f5c; --accent-soft: #e2efe9;
+    --aart: #2f5d8a; --aart-soft: #e4ecf5; --bjorn: #b4582b; --bjorn-soft: #f7e7dd;
+    --done: #2e8b57; --warn: #a15c00; --warn-soft: #fbefd9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141816; --card: #1d2320; --ink: #e9ede9; --muted: #98a19c;
+      --line: #2c3430; --accent: #5fc2a3; --accent-soft: #1f2f29;
+      --aart: #8fb7e3; --aart-soft: #1d2834; --bjorn: #f0a37c; --bjorn-soft: #33241c;
+      --done: #6fd39b; --warn: #e0a95a; --warn-soft: #33291a;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent; }
+  .wrap { max-width: 560px; margin: 0 auto;
+    padding: calc(16px + env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom)); }
+  header h1 { font-size: 15px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--muted); margin: 4px 0 12px; }
+
+  .weeknav { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .weeknav button { flex: none; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--card); color: var(--ink); font-size: 20px; cursor: pointer; }
+  .weeklabel { flex: 1; text-align: center; }
+  .weeklabel .dates { font-size: 22px; font-weight: 700; }
+  .weeklabel .tag { font-size: 13px; color: var(--muted); }
+  .weeklabel .tag.now { color: var(--accent); font-weight: 600; }
+  .backnow { display: block; margin: 0 auto 6px; background: none; border: 0; color: var(--accent);
+    font-size: 14px; cursor: pointer; text-decoration: underline; visibility: hidden; }
+  .backnow.show { visibility: visible; }
+
+  .me-bar { display: flex; align-items: center; justify-content: space-between; margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+  .me-bar button { background: none; border: 0; color: var(--accent); font-size: 14px; cursor: pointer; text-decoration: underline; padding: 6px 0; }
+  .sync { font-size: 12px; }
+  .sync.off { color: var(--warn); }
+
+  header.top { display: flex; align-items: center; justify-content: space-between; }
+  header.top h1 { margin: 4px 0 12px; }
+  #menubtn { background: var(--card); border: 1px solid var(--line); color: var(--ink); border-radius: 10px;
+    padding: 6px 10px; font-size: 13px; cursor: pointer; margin-bottom: 8px; }
+  .sheet { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: none; align-items: flex-end; justify-content: center; z-index: 9; }
+  .sheet.show { display: flex; }
+  .sheet-card { background: var(--bg); width: 100%; max-width: 560px; border-radius: 20px 20px 0 0;
+    padding: 16px 16px calc(24px + env(safe-area-inset-bottom)); max-height: 85vh; overflow: auto; }
+  .sheet-head { display: flex; justify-content: space-between; align-items: center; }
+  .sheet-head h2 { margin: 0; font-size: 20px; }
+  .sheet-head button { background: none; border: 0; font-size: 20px; color: var(--muted); cursor: pointer; width: 44px; height: 44px; }
+  .sheet h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 18px 0 6px; }
+  .sheet .hint { font-size: 13px; color: var(--muted); margin: 0 0 8px; }
+  .room { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--card);
+    border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; }
+  .room small { display: block; color: var(--muted); font-size: 12px; }
+  .switch { flex: none; width: 46px; height: 28px; border-radius: 14px; background: var(--line); position: relative; transition: background .2s; }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: left .2s; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+  .room.on .switch { background: var(--done); } .room.on .switch::after { left: 21px; }
+  .rowbtn { width: 100%; text-align: left; background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px; font-size: 15px; color: var(--ink); cursor: pointer; }
+  .tabs { display: flex; gap: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 4px; margin-bottom: 14px; }
+  .tabs button { flex: 1; border: 0; background: none; color: var(--muted); font-size: 14px; font-weight: 600; padding: 10px 6px; border-radius: 10px; cursor: pointer; }
+  .tabs button.on { background: var(--accent-soft); color: var(--accent); }
+  .count { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent); color: var(--bg); font-size: 11px; line-height: 18px; }
+  .count:empty { display: none; }
+  .addform { display: flex; gap: 8px; margin: 6px 0 4px; }
+  .addform input { flex: 1; min-width: 0; font-size: 16px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  .addform button { flex: none; width: 44px; border-radius: 10px; border: 0; background: var(--accent); color: var(--bg); font-size: 22px; cursor: pointer; }
+  .shopitem { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); min-height: 44px; }
+  .shoplist .shopitem:first-child { border-top: 0; }
+  .shopitem button.buy { flex: none; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line); background: none; cursor: pointer; padding: 0; }
+  .shopitem button.buy:active { background: var(--done); border-color: var(--done); }
+  .shopitem .nm { flex: 1; min-width: 0; font-size: 15px; }
+  .shopitem .by { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .shoplist:empty::before { content: "Niks nodig 👍"; display: block; color: var(--muted); font-size: 13px; padding: 6px 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+  .chip { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
+  .chip.on { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); }
+  .needs { margin: 6px 0 4px; }
+  .needs b { display: block; font-size: 12px; margin-bottom: 4px; }
+  .needs .tools { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .needs .chip { padding: 5px 9px; font-size: 12px; }
+  .needs .tiny { font-size: 11px; color: var(--muted); }
+  .quick { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 10px; }
+  .quick b { display: block; font-size: 13px; margin-bottom: 6px; color: var(--muted); }
+  .linkform { display: flex; flex-direction: column; gap: 8px; }
+  .linkform label { font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+  .linkform input { font-size: 16px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+  .linkform button { padding: 12px; border-radius: 10px; border: 0; background: var(--accent); color: var(--bg); font-size: 15px; font-weight: 600; cursor: pointer; }
+  .picker { position: fixed; inset: 0; background: var(--bg); display: none; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px; padding: 24px; z-index: 10; }
+  .picker.show { display: flex; }
+  .picker h2 { font-size: 22px; font-weight: 700; margin: 0 0 6px; }
+  .picker button { width: 100%; max-width: 280px; padding: 16px; border-radius: 16px; font-size: 18px; font-weight: 700;
+    border: 1px solid var(--line); background: var(--card); cursor: pointer; }
+  .picker .aart { color: var(--aart); } .picker .bjorn { color: var(--bjorn); }
+
+  .debt { background: var(--warn-soft); color: var(--warn); border-radius: 12px; padding: 8px 12px; font-size: 13px; margin-bottom: 10px; }
+
+  #people { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; align-items: start; }
+  .person { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 10px 8px; min-width: 0; }
+  .person.other { background: transparent; }
+  .person-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .avatar { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+  .aart .avatar { background: var(--aart-soft); color: var(--aart); }
+  .bjorn .avatar { background: var(--bjorn-soft); color: var(--bjorn); }
+  .person-head .name { font-weight: 700; font-size: 16px; flex: 1; min-width: 0; }
+  .progress { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .progress.full { color: var(--done); font-weight: 600; }
+  .bar { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; margin-bottom: 6px; }
+  .bar i { display: block; height: 100%; width: 0; transition: width .25s; }
+  .aart .bar i { background: var(--aart); } .bjorn .bar i { background: var(--bjorn); }
+
+  .task { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); }
+  .bar + .task { border-top: 0; }
+  label.task { cursor: pointer; }
+  .task input { appearance: none; -webkit-appearance: none; flex: none; width: 26px; height: 26px; margin: 0;
+    border: 2px solid var(--line); border-radius: 8px; display: grid; place-items: center; background: var(--card);
+    transition: background .15s, border-color .15s; cursor: pointer; }
+  .task input:checked { background: var(--done); border-color: var(--done); }
+  .task input:checked::after { content: ""; width: 6px; height: 11px; border: solid #fff;
+    border-width: 0 2.5px 2.5px 0; transform: translateY(-1px) rotate(45deg); }
+  .task .tick { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line);
+    display: grid; place-items: center; margin-top: 1px; }
+  .task .tick.on { background: var(--done); border-color: var(--done); }
+  .task .tick.on::after { content: ""; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: translateY(-1px) rotate(45deg); }
+  .task .t { min-width: 0; }
+  .task .t b { display: block; font-size: 15px; }
+  .task .t small { display: block; font-size: 12px; color: var(--muted); line-height: 1.35; margin-top: 2px; }
+  .task.is-done .t b { color: var(--muted); text-decoration: line-through; }
+  .note { display: inline-block; font-size: 11px; font-weight: 600; color: var(--warn); background: var(--warn-soft);
+    border-radius: 6px; padding: 1px 6px; margin-top: 4px; }
+
+  .item { border-top: 1px solid var(--line); padding-bottom: 6px; }
+  .bar + .item { border-top: 0; }
+  .item .task { border-top: 0; padding-bottom: 4px; }
+  details.how { margin-left: 0; font-size: 12px; }
+
+  details.how summary { color: var(--accent); cursor: pointer; list-style: none; padding: 4px 0; font-weight: 600; }
+  details.how summary::-webkit-details-marker { display: none; }
+  details.how summary::before { content: "▸ "; }
+  details.how[open] summary::before { content: "▾ "; }
+  details.how ul { margin: 2px 0 4px; padding-left: 16px; color: var(--ink); line-height: 1.4; }
+  details.how li { margin: 3px 0; }
+  .state { padding: 14px 0 8px; text-align: center; font-size: 15px; font-weight: 600; }
+  .state small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .awaybtn { display: block; width: 100%; margin-top: 8px; padding: 10px 8px; border-radius: 10px; border: 1px dashed var(--line);
+    background: none; color: var(--muted); font-size: 13px; cursor: pointer; }
+  .awaybtn.on { border-style: solid; border-color: var(--warn); color: var(--warn); }
+
+  .card2 { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; margin: 4px 0 22px; font-size: 14px; }
+  .card2 h3 { margin: 0 0 6px; font-size: 15px; }
+  .trash { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); }
+  .trash:first-of-type { border-top: 0; }
+  .trash .day { color: var(--muted); white-space: nowrap; }
+  .trash .day.soon { color: var(--accent); font-weight: 600; }
+  .card2 .hint { color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  h2.sec { font-size: 15px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line);
+    border-radius: 16px; overflow: hidden; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 10px; border-top: 1px solid var(--line); vertical-align: top; }
+  thead th { border-top: 0; font-size: 12px; color: var(--muted); font-weight: 600; }
+  tr.current td { background: var(--accent-soft); font-weight: 600; }
+  tbody tr { cursor: pointer; }
+  td.d { white-space: nowrap; color: var(--muted); }
+  tr.current td.d { color: var(--accent); }
+  td .free { color: var(--done); } td .away { color: var(--warn); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><h1>Molenweg</h1><button id="menubtn" aria-label="Menu">⚙︎ Menu</button></header>
+
+  <nav class="tabs">
+    <button data-tab="schoon" class="on">🧽 Schoonmaak</button>
+    <button data-tab="shop">🛒 Boodschappen <span class="count" id="shopcount"></span></button>
+  </nav>
+
+  <div id="tab-schoon">
+  <div class="weeknav">
+    <button id="prev" aria-label="Vorige week">‹</button>
+    <div class="weeklabel"><div class="dates" id="dates"></div><div class="tag" id="tag"></div></div>
+    <button id="next" aria-label="Volgende week">›</button>
+  </div>
+  <button class="backnow" id="backnow">Terug naar deze week</button>
+
+  <div class="me-bar">
+    <span><span id="metext"></span> · <span class="sync" id="sync"></span></span>
+    <button id="switch">Wissel</button>
+  </div>
+
+  <div id="debt"></div>
+  <div id="people"></div>
+
+  <div class="card2">
+    <h3>Afval deze week</h3>
+    <div id="trash"></div>
+    <div class="hint">Vuilniszak weg als 'ie vol is.</div>
+  </div>
+
+  <h2 class="sec">Komende weken</h2>
+  <table>
+    <thead><tr><th>Week</th><th>Aart</th><th>Bjorn</th></tr></thead>
+    <tbody id="overview"></tbody>
+  </table>
+  </div>
+
+  <div id="tab-shop" hidden>
+    <div class="card2">
+      <h3>Boodschappenlijst</h3>
+      <form class="addform"><input placeholder="Wat moet er gehaald worden?" autocomplete="off" enterkeyhint="done"><button>+</button></form>
+      <div class="shoplist" id="shoplist"></div>
+      <div class="quick">
+        <b>Schoonmaakspullen op?</b>
+        <div class="chips" id="chips"></div>
+      </div>
+    </div>
+    <p class="hint" style="text-align:center;font-size:13px;color:var(--muted)">Rondje = gekocht, dan verdwijnt het van de lijst.</p>
+  </div>
+</div>
+
+<div class="sheet" id="sheet">
+  <div class="sheet-card">
+    <div class="sheet-head"><h2>Menu</h2><button id="closemenu" aria-label="Sluiten">✕</button></div>
+    <h3>Ruimtes</h3>
+    <p class="hint">Zet een taak uit tijdens een verbouwing en weer aan als hij klaar is. Geldt vanaf deze week. Stofzuigen en dweilen van heel het huis (ook de slaapkamers) is een aparte taak en staat altijd aan.</p>
+    <div id="roomlist"></div>
+    <h3>Delen met elkaar</h3>
+    <p class="hint">Vul dit één keer in op beide telefoons.</p>
+    <form id="linkform" class="linkform">
+      <label>Repo<input id="repo" placeholder="gebruikersnaam/molenweg-data" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+      <label>Token<input id="token" type="password" placeholder="github_pat_..." autocomplete="off"></label>
+      <button>Opslaan</button>
+    </form>
+    <p class="hint" id="linkstatus"></p>
+    <h3>Jij</h3>
+    <button class="rowbtn" id="switch2">Wissel van persoon</button>
+  </div>
+</div>
+
+<div class="picker" id="picker">
+  <h2>Wie ben jij?</h2>
+  <button class="aart" data-me="aart">Aart</button>
+  <button class="bjorn" data-me="bjorn">Bjorn</button>
+</div>
+
+<script>
+// ================== INSTELLINGEN ==================
+// Gedeelde opslag via een (privé) GitHub-repo. Repo + token vul je in via het menu in de app.
+// Optioneel kun je de repo hier alvast invullen, bv. "aartvw/molenweg-data" (de token NOOIT hier zetten).
+const GH_REPO = "";
+
+const START = Date.UTC(2026, 9, 26); // ma 26 okt 2026 = week 1
+const PEOPLE = [{ id: "aart", name: "Aart" }, { id: "bjorn", name: "Bjorn" }];
+
+// Taken die je in het menu aan/uit zet (bv. tijdens verbouwing). on = standaard aan.
+// Vloeren (stofzuigen/dweilen heel het huis) staat altijd aan en zit los van deze ruimtes.
+const ROOMS = {
+  toilet:     { name: "Toilet",     on: true,  sub: "Elke week · pot en fonteintje" },
+  badkamer:   { name: "Badkamer",   on: true,  sub: "Om de week · douche, wastafel, spiegel" },
+  keuken:     { name: "Keuken",     on: true,  sub: "Om de week · kookplaat, aanrecht, magnetron" },
+  woonkamer:  { name: "Woonkamer",  on: false, sub: "Om de week · stof afnemen en opruimen" },
+  koelkast:   { name: "Koelkast",   on: true,  sub: "1× per maand" },
+  prullenbak: { name: "Prullenbak", on: true,  sub: "1× per maand" }
+};
+// w = punten (voor eerlijke compensatie), min = ongeveer minuten
+const TASKS = {
+  toilet:     { name: "Toilet",     w: 1, min: 5, tools: "WC-borstel", needs: ["WC-reiniger", "Allesreiniger", "Sponsjes"],  how: ["WC-reiniger onder de rand, borstelen en doortrekken", "Bril, deksel en buitenkant pot afnemen", "Fonteintje en kraantje schoon"] },
+  badkamer:   { name: "Badkamer",   w: 2, min: 15, tools: "Douchetrekker", needs: ["Badkamerreiniger", "Ontkalker", "Glasreiniger", "Sponsjes"], how: ["Douche afspoelen en kalk/vuil wegpoetsen", "Haren uit het afvoerputje", "Wastafel, kraan en spiegel schoon"] },
+  keuken:     { name: "Keuken",     w: 2, min: 15, needs: ["Ontvetter", "Allesreiniger", "Sponsjes", "Vaatdoekjes"], how: ["Kookplaat en aanrecht ontvetten", "Spoelbak en kraan schoon", "Magnetron binnenkant afnemen"] },
+  woonkamer:  { name: "Woonkamer",  w: 1, min: 10, needs: ["Allesreiniger", "Microvezeldoekjes"], how: ["Opruimen en tafel afnemen", "Stof afnemen (kast, vensterbank, tv-meubel)"] },
+  koelkast:   { name: "Koelkast",   w: 1, min: 10, needs: ["Allesreiniger", "Vaatdoekjes"], how: ["Over de datum of beschimmeld: weg", "Schappen afnemen waar het plakt"] },
+  prullenbak: { name: "Prullenbak", w: 1, min: 5, needs: ["Allesreiniger", "Vuilniszakken"],  how: ["Bak leeg en uitspoelen", "Deksel afnemen, nieuwe zak erin"] },
+  zuigen:     { name: "Stofzuigen", w: 2, min: 20, tools: "Stofzuiger", needs: ["Stofzuigerzakken"] },
+  vloeren:    { name: "Stofzuigen + dweilen", w: 3, min: 35, tools: "Stofzuiger, emmer + dweil/mop", needs: ["Stofzuigerzakken", "Vloerreiniger"] }
+};
+// 4-weekse cyclus [Aart, Bjorn]. Lege lijst = vrije week.
+// "V" = vloeren (week 1 en 3 met dweilen, week 2 en 4 alleen stofzuigen). "X"/"Y" = koelkast/prullenbak, wisselt per ronde.
+const CYCLE = [
+  [["V", "toilet"], ["badkamer", "keuken"]],
+  [[], ["V", "toilet", "X"]],
+  [["badkamer", "keuken"], ["V", "toilet"]],
+  [["V", "toilet", "Y"], []]
+];
+// Woonkamer (oppervlakken) om de week: week 1 Bjorn, week 3 Aart
+const WOONKAMER_SLOTS = { 0: "bjorn", 2: "aart" };
+// Schoonmaakspullen die je met één tik op de lijst zet
+const SUPPLIES = ["WC-reiniger", "Allesreiniger", "Badkamerreiniger", "Ontkalker", "Ontvetter", "Vloerreiniger",
+  "Glasreiniger", "Afwasmiddel", "Sponsjes", "Vaatdoekjes", "Microvezeldoekjes", "Vuilniszakken", "Stofzuigerzakken",
+  "WC-papier", "Handzeep", "Keukenrol"];
+// Afval
+const PAPIER_START = Date.UTC(2026, 10, 9);  // ma 9 nov 2026, daarna elke 4 weken
+const GFT_START    = Date.UTC(2026, 10, 10); // di 10 nov 2026, daarna elke 2 weken
+// =================================================
+
+const DAY = 86400000, WEEK = 7 * DAY;
+const MONTHS = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
+const DAYS = ["ma","di","wo","do","vr","za","zo"];
+const mod = (n, m) => ((n % m) + m) % m;
+const other = p => p === "aart" ? "bjorn" : "aart";
+const nameOf = p => PEOPLE.find(x => x.id === p).name;
+function todayUTC() { const n = new Date(); return Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()); }
+function currentIndex() { return Math.floor((todayUTC() - START) / WEEK); }
+function weekStart(i) { return START + i * WEEK; }
+function weekId(i) { return new Date(weekStart(i)).toISOString().slice(0, 10); }
+function fmt(ms) { const d = new Date(ms); return d.getUTCDate() + " " + MONTHS[d.getUTCMonth()]; }
+function range(i) { const s = weekStart(i); return fmt(s) + " – " + fmt(s + 6 * DAY); }
+
+// ---------- opslag ----------
+function lsGet(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v && typeof v === "object" ? v : d; } catch (e) { return d; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+let done = lsGet("sm:done", {}), away = lsGet("sm:away", {}), rooms = lsGet("sm:rooms2", {}), shop = lsGet("sm:shop", {});
+let online = null;
+const STORE = { vinkjes: ["sm:done", () => done], afwezig: ["sm:away", () => away], ruimtes: ["sm:rooms2", () => rooms], boodschappen: ["sm:shop", () => shop] };
+
+function ls(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
+function cfg() { return { repo: (ls("sm:repo") || GH_REPO).trim(), token: ls("sm:token").trim() }; }
+function connected() { const c = cfg(); return !!(c.repo && c.token); }
+const enc = str => { const b = new TextEncoder().encode(str); let s = ""; b.forEach(x => s += String.fromCharCode(x)); return btoa(s); };
+const dec = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\n/g, "")), c => c.charCodeAt(0)));
+function ghUrl() { return "https://api.github.com/repos/" + cfg().repo + "/contents/data.json"; }
+function ghHeaders() { return { Authorization: "Bearer " + cfg().token, Accept: "application/vnd.github+json" }; }
+async function ghGet() {
+  const r = await fetch(ghUrl() + "?t=" + Date.now(), { headers: ghHeaders(), cache: "no-store" });
+  if (r.status === 404) return { data: {}, sha: null };
+  if (!r.ok) throw new Error("GitHub " + r.status);
+  const j = await r.json();
+  return { data: JSON.parse(dec(j.content) || "{}"), sha: j.sha };
+}
+function applyData(d) {
+  done = d.vinkjes || {}; away = d.afwezig || {}; rooms = d.ruimtes || {}; shop = d.boodschappen || {};
+  lsSet("sm:done", done); lsSet("sm:away", away); lsSet("sm:rooms2", rooms); lsSet("sm:shop", shop);
+}
+let pulling = false, saving = 0;
+async function pull() {
+  if (!connected() || pulling || saving) return;
+  pulling = true;
+  try { const { data } = await ghGet(); if (!saving) applyData(data); online = true; }
+  catch (e) { online = false; }
+  pulling = false;
+  render();
+}
+function setPath(obj, path, val) {
+  let o = obj;
+  for (let k = 0; k < path.length - 1; k++) o = o[path[k]] = o[path[k]] || {};
+  if (val === null) delete o[path[path.length - 1]]; else o[path[path.length - 1]] = val;
+}
+let queue = Promise.resolve();
+function save(kind, path, val) {
+  const [lsKey, get] = STORE[kind];
+  setPath(get(), path, val);
+  lsSet(lsKey, get());
+  render();
+  if (!connected()) return;
+  saving++;
+  // Wijzigingen één voor één wegschrijven; bij botsing (de ander schreef net) opnieuw ophalen en samenvoegen.
+  queue = queue.then(async () => {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        const { data, sha } = await ghGet();
+        data[kind] = data[kind] || {};
+        setPath(data[kind], path, val);
+        const body = { message: "update " + kind, content: enc(JSON.stringify(data)) };
+        if (sha) body.sha = sha;
+        const r = await fetch(ghUrl(), { method: "PUT", headers: ghHeaders(), body: JSON.stringify(body) });
+        if (r.ok) { online = true; if (saving === 1) applyData(data); return; }
+        if (r.status !== 409 && r.status !== 422) throw new Error("GitHub " + r.status);
+      } catch (e) { online = false; return; }
+    }
+    online = false;
+  }).finally(() => { saving--; render(); });
+}
+
+// ---------- ruimtes aan/uit (met historie, zodat oude weken kloppen) ----------
+function roomOn(r, i) {
+  const ch = rooms[r] || {}, id = weekId(i);
+  const keys = Object.keys(ch).filter(k => k <= id).sort();
+  return keys.length ? !!ch[keys[keys.length - 1]] : ROOMS[r].on;
+}
+
+// ---------- basisschema ----------
+function baseAssign(i) {
+  const swap = mod(Math.floor(i / 4), 2) === 1, c = CYCLE[mod(i, 4)];
+  const mopWeek = mod(i, 2) === 0;
+  const map = t => t === "V" ? (mopWeek ? "vloeren" : "zuigen")
+    : t === "X" ? (swap ? "prullenbak" : "koelkast") : t === "Y" ? (swap ? "koelkast" : "prullenbak") : t;
+  const out = { aart: c[0].map(map), bjorn: c[1].map(map) };
+  const w = WOONKAMER_SLOTS[mod(i, 4)];
+  if (w) out[w].push("woonkamer");
+  ["aart", "bjorn"].forEach(p => {
+    out[p] = out[p].filter(t => t === "vloeren" || t === "zuigen" || roomOn(t, i));
+  });
+  // vrije week = cyclus zegt leeg
+  return { tasks: out, free: { aart: c[0].length === 0, bjorn: c[1].length === 0 } };
+}
+
+// ---------- planning met afwezigheid + compensatie ----------
+function schedule(upto) {
+  const out = [], debt = { aart: 0, bjorn: 0 };
+  for (let i = 0; i <= upto; i++) {
+    const b = baseAssign(i), aw = away[weekId(i)] || {};
+    const wk = { tasks: {}, free: b.free, away: {} };
+    PEOPLE.forEach(({ id }) => { wk.tasks[id] = b.tasks[id].map(t => ({ t })); wk.away[id] = !!aw[id]; });
+    const W = x => TASKS[x.t].w;
+    if (wk.away.aart && wk.away.bjorn) {
+      wk.tasks.aart = []; wk.tasks.bjorn = [];
+    } else if (wk.away.aart || wk.away.bjorn) {
+      const p = wk.away.aart ? "aart" : "bjorn", q = other(p);
+      const moved = wk.tasks[p];
+      wk.tasks[q] = wk.tasks[q].concat(moved.map(x => ({ t: x.t, note: "Van " + nameOf(p) + " (weg)" })));
+      wk.tasks[p] = [];
+      debt[p] += moved.reduce((s, x) => s + W(x), 0);
+      const m = Math.min(debt.aart, debt.bjorn); debt.aart -= m; debt.bjorn -= m;
+    } else {
+      PEOPLE.forEach(({ id: p }) => {
+        const q = other(p);
+        if (debt[p] <= 0 || wk.free[p]) return;
+        wk.tasks[q].slice().sort((x, y) => W(y) - W(x)).forEach(x => {
+          if (W(x) <= debt[p]) {
+            wk.tasks[q] = wk.tasks[q].filter(y => y !== x);
+            wk.tasks[p].push({ t: x.t, note: "Inhalen voor " + nameOf(q) });
+            debt[p] -= W(x);
+          }
+        });
+      });
+    }
+    wk.debtAfter = { ...debt };
+    out.push(wk);
+  }
+  return out;
+}
+function weekPlan(i, sched) {
+  if (i >= 0) return sched[i];
+  const b = baseAssign(i), wk = { tasks: {}, free: b.free, away: { aart: false, bjorn: false } };
+  PEOPLE.forEach(({ id }) => wk.tasks[id] = b.tasks[id].map(t => ({ t })));
+  return wk;
+}
+function howFor(t, i) {
+  if (t === "zuigen" || t === "vloeren") {
+    const z = "Heel het huis stofzuigen: hal, keuken, badkamer, toilet, beide slaapkamers" + (roomOn("woonkamer", i) ? ", woonkamer" : "");
+    return t === "zuigen" ? [z, "Dweilen hoeft deze week niet"] : [z, "Daarna alles dweilen"];
+  }
+  return TASKS[t].how;
+}
+
+// ---------- afval ----------
+function trashFor(i) {
+  const items = [], s = weekStart(i), today = todayUTC();
+  for (let d = 0; d < 7; d++) {
+    const ms = s + d * DAY, what = [];
+    if (d === 1) what.push("Plastic + restafval");
+    if (d === 0 && mod((ms - PAPIER_START) / DAY, 28) === 0) what.push("Papier");
+    if (d === 1 && mod((ms - GFT_START) / DAY, 14) === 0) what.push("GFT");
+    if (what.length) {
+      const rel = ms === today ? "vandaag" : ms === today + DAY ? "morgen" : DAYS[d] + " " + fmt(ms);
+      items.push({ rel, soon: ms === today || ms === today + DAY, what: what.join(" + ") });
+    }
+  }
+  return items;
+}
+
+// ---------- wie ben ik ----------
+let memMe = null;
+function getMe() { try { return localStorage.getItem("sm:me") || memMe; } catch (e) { return memMe; } }
+function setMe(v) { memMe = v; try { localStorage.setItem("sm:me", v); } catch (e) {} }
+
+// ---------- tekenen ----------
+let view = currentIndex();
+const openHow = {};
+document.addEventListener("toggle", e => { if (e.target.dataset && e.target.dataset.k) openHow[e.target.dataset.k] = e.target.open; }, true);
+
+function esc(t) { return String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function onListSet() {
+  return new Set(Object.values(shop).filter(v => v && v.name).map(v => v.name.toLowerCase()));
+}
+function chipsHtml(names) {
+  const on = onListSet();
+  return names.map(n => '<button class="chip' + (on.has(n.toLowerCase()) ? " on" : "") + '" data-chip="' + esc(n) + '">' +
+    (on.has(n.toLowerCase()) ? "🛒 " : "") + esc(n) + "</button>").join("");
+}
+function needsHtml(T) {
+  if (!T.needs && !T.tools) return "";
+  return '<div class="needs"><b>Nodig</b>' + (T.tools ? '<div class="tools">' + esc(T.tools) + "</div>" : "") +
+    (T.needs ? '<div class="chips">' + chipsHtml(T.needs) + '</div><div class="tiny">Iets op? Tik erop, dan komt het op de boodschappenlijst.</div>' : "") + "</div>";
+}
+function toggleSupply(n) {
+  const hit = Object.entries(shop).find(([, v]) => v && v.name && v.name.toLowerCase() === n.toLowerCase());
+  if (hit) save("boodschappen", [hit[0]], null); else addItem(n);
+}
+function renderShop() {
+  const items = Object.entries(shop).filter(([, v]) => v && v.name).sort((a, b) => (a[1].at || 0) - (b[1].at || 0));
+  document.getElementById("shoplist").innerHTML = items.map(([k, v]) =>
+    '<div class="shopitem"><button class="buy" data-buy="' + k + '" aria-label="Gekocht"></button><span class="nm">' + esc(v.name) +
+    '</span><span class="by">' + (v.by ? nameOf(v.by) : "") + "</span></div>").join("");
+  document.getElementById("chips").innerHTML = chipsHtml(SUPPLIES);
+  document.getElementById("shopcount").textContent = items.length || "";
+}
+function addItem(name) {
+  name = name.trim(); if (!name) return;
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  save("boodschappen", [id], { name, by: getMe() || "", at: Date.now() });
+}
+function render() {
+  renderShop();
+  const now = currentIndex(), diff = view - now;
+  const sched = schedule(Math.max(view, now + 10, 0));
+  document.getElementById("dates").textContent = range(view);
+  const tag = document.getElementById("tag");
+  tag.textContent = diff === 0 ? "Deze week" : diff === 1 ? "Volgende week" : diff === -1 ? "Vorige week"
+    : diff > 0 ? "Over " + diff + " weken" : (-diff) + " weken geleden";
+  tag.className = "tag" + (diff === 0 ? " now" : "");
+  document.getElementById("backnow").classList.toggle("show", diff !== 0);
+
+  const me = getMe(), meP = PEOPLE.find(p => p.id === me);
+  document.getElementById("metext").textContent = meP ? "Je bent " + meP.name : "";
+  const sync = document.getElementById("sync");
+  sync.textContent = !connected() ? "niet gekoppeld (zie menu)" : online === false ? "geen verbinding" : "gedeeld";
+  sync.className = "sync" + (!connected() || online === false ? " off" : "");
+  const st = document.getElementById("linkstatus");
+  if (st) st.textContent = !connected() ? "Nog niet gekoppeld: alles staat alleen op dit toestel."
+    : online === false ? "Gekoppeld, maar geen verbinding. Klopt de repo/token?" : online ? "✓ Gekoppeld en gedeeld" : "Verbinden...";
+
+  const wk = weekPlan(view, sched), wd = done[weekId(view)] || {};
+  const prev = view > 0 ? sched[view - 1].debtAfter : { aart: 0, bjorn: 0 };
+  const owe = PEOPLE.find(p => prev[p.id] > 0);
+  document.getElementById("debt").innerHTML = owe
+    ? '<div class="debt">' + owe.name + " moet nog " + prev[owe.id] + " punt" + (prev[owe.id] > 1 ? "en" : "") +
+      " inhalen. Gaat automatisch.</div>" : "";
+
+  const box = document.getElementById("people");
+  box.innerHTML = "";
+  PEOPLE.slice().sort((a, b) => (b.id === me) - (a.id === me)).forEach(p => {
+    const mine = p.id === me, tasks = wk.tasks[p.id], pd = wd[p.id] || {};
+    const n = tasks.filter(x => pd[x.t]).length, total = tasks.length;
+    const card = document.createElement("section");
+    card.className = "person " + p.id + (mine ? "" : " other");
+    let h = '<div class="person-head"><div class="avatar">' + p.name[0] + '</div><div class="name">' + p.name + "</div>" +
+      (total ? '<div class="progress' + (n === total ? " full" : "") + '">' + (n === total ? "Klaar ✓" : n + "/" + total) + "</div>" : "") + "</div>";
+    if (wk.away[p.id]) {
+      h += '<div class="state">🌴 Weg<small>Taken gaan naar ' + nameOf(other(p.id)) + "</small></div>";
+    } else if (!total) {
+      h += '<div class="state">🎉 Vrije week<small>Niks te doen</small></div>';
+    } else {
+      h += '<div class="bar"><i style="width:' + (n / total * 100) + '%"></i></div>';
+      tasks.forEach(x => {
+        const T = TASKS[x.t], on = !!pd[x.t];
+        const label = '<span class="t"><b>' + T.name + "</b><small>± " + T.min + " min</small>" +
+          (x.note ? '<span class="note">' + x.note + "</span>" : "") + "</span>";
+        h += '<div class="item">' + (mine
+          ? '<label class="task' + (on ? " is-done" : "") + '"><input type="checkbox" data-t="' + x.t + '"' + (on ? " checked" : "") + ">" + label + "</label>"
+          : '<div class="task' + (on ? " is-done" : "") + '"><span class="tick' + (on ? " on" : "") + '"></span>' + label + "</div>") +
+          '<details class="how" data-k="' + x.t + '"' + (openHow[x.t] ? " open" : "") + '><summary>Wat moet ik doen?</summary><ul>' +
+          howFor(x.t, view).map(s => "<li>" + s + "</li>").join("") + "</ul>" + needsHtml(T) + "</details></div>";
+      });
+    }
+    if (mine && view >= 0) {
+      h += '<button class="awaybtn' + (wk.away[p.id] ? " on" : "") + '" data-away="1">' +
+        (wk.away[p.id] ? "Toch thuis? Ongedaan maken" : "🌴 Ik ben deze week weg") + "</button>";
+    }
+    card.innerHTML = h;
+    box.appendChild(card);
+  });
+
+  const cur = Math.max(now, 0);
+  document.getElementById("roomlist").innerHTML = Object.keys(ROOMS).map(r => {
+    const on = roomOn(r, cur), R = ROOMS[r];
+    return '<div class="room' + (on ? " on" : "") + '" data-room="' + r + '"><span><b>' + R.name + "</b><small>" +
+      R.sub + '</small></span><span class="switch"></span></div>';
+  }).join("");
+
+  document.getElementById("trash").innerHTML = trashFor(view).map(x =>
+    '<div class="trash"><span>' + x.what + '</span><span class="day' + (x.soon ? " soon" : "") + '">' + x.rel + "</span></div>").join("");
+
+  const tb = document.getElementById("overview");
+  tb.innerHTML = "";
+  const short = t => t === "vloeren" ? "Zuigen + dweilen" : TASKS[t].name;
+  for (let i = now; i < now + 10; i++) {
+    const w = weekPlan(i, sched), row = document.createElement("tr");
+    if (i === view) row.className = "current";
+    const cell = pid => w.away[pid] ? '<span class="away">🌴 Weg</span>'
+      : !w.tasks[pid].length ? '<span class="free">Vrij</span>'
+      : w.tasks[pid].map(x => short(x.t) + (x.note ? "*" : "")).join(", ");
+    row.innerHTML = '<td class="d">' + range(i) + "</td><td>" + cell("aart") + "</td><td>" + cell("bjorn") + "</td>";
+    row.onclick = () => { view = i; render(); window.scrollTo({ top: 0, behavior: "smooth" }); };
+    tb.appendChild(row);
+  }
+}
+
+// ---------- events ----------
+document.getElementById("people").addEventListener("change", e => {
+  const t = e.target.dataset.t;
+  if (t) save("vinkjes", [weekId(view), getMe(), t], e.target.checked ? true : null);
+});
+document.getElementById("people").addEventListener("click", e => {
+  if (e.target.dataset.away) {
+    const id = weekId(view), me = getMe(), cur = !!(away[id] && away[id][me]);
+    save("afwezig", [id, me], cur ? null : true);
+  }
+});
+document.getElementById("prev").onclick = () => { view--; render(); };
+document.getElementById("next").onclick = () => { view++; render(); };
+document.getElementById("backnow").onclick = () => { view = currentIndex(); render(); };
+const picker = document.getElementById("picker");
+picker.addEventListener("click", e => {
+  if (e.target.dataset.me) { setMe(e.target.dataset.me); picker.classList.remove("show"); render(); }
+});
+document.getElementById("switch").onclick = () => picker.classList.add("show");
+const sheet = document.getElementById("sheet");
+document.getElementById("menubtn").onclick = () => {
+  document.getElementById("repo").value = cfg().repo; document.getElementById("token").value = cfg().token;
+  sheet.classList.add("show");
+};
+document.getElementById("linkform").addEventListener("submit", e => {
+  e.preventDefault();
+  try {
+    localStorage.setItem("sm:repo", document.getElementById("repo").value.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\/$/, ""));
+    localStorage.setItem("sm:token", document.getElementById("token").value.trim());
+  } catch (err) {}
+  online = null; render(); pull();
+});
+document.getElementById("closemenu").onclick = () => sheet.classList.remove("show");
+sheet.addEventListener("click", e => { if (e.target === sheet) sheet.classList.remove("show"); });
+document.getElementById("switch2").onclick = () => { sheet.classList.remove("show"); picker.classList.add("show"); };
+document.getElementById("roomlist").addEventListener("click", e => {
+  const el = e.target.closest("[data-room]"); if (!el) return;
+  const r = el.dataset.room, cur = Math.max(currentIndex(), 0);
+  save("ruimtes", [r, weekId(cur)], !roomOn(r, cur));
+});
+// tabs
+function showTab(t) {
+  document.getElementById("tab-schoon").hidden = t !== "schoon";
+  document.getElementById("tab-shop").hidden = t !== "shop";
+  document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  try { localStorage.setItem("sm:tab", t); } catch (e) {}
+}
+document.querySelector(".tabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (b) showTab(b.dataset.tab); });
+try { showTab(localStorage.getItem("sm:tab") || "schoon"); } catch (e) { showTab("schoon"); }
+// boodschappen
+document.querySelectorAll(".addform").forEach(f => f.addEventListener("submit", e => {
+  e.preventDefault(); const inp = f.querySelector("input"); addItem(inp.value); inp.value = ""; inp.focus();
+}));
+document.getElementById("tab-shop").addEventListener("click", e => {
+  const buy = e.target.closest("[data-buy]");
+  if (buy) { save("boodschappen", [buy.dataset.buy], null); return; }
+  const chip = e.target.closest("[data-chip]");
+  if (chip) toggleSupply(chip.dataset.chip);
+});
+document.getElementById("people").addEventListener("click", e => {
+  const chip = e.target.closest("[data-chip]");
+  if (chip) toggleSupply(chip.dataset.chip);
+});
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { render(); pull(); } });
+setInterval(() => { if (!document.hidden) pull(); }, 15000);
+
+if (!getMe()) picker.classList.add("show");
+render();
+pull();
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
